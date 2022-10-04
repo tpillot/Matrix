@@ -1,9 +1,9 @@
 #ifndef MATRIX_HPP
 # define MATRIX_HPP
 
-# include <utility>
 # include <iostream>
 # include <vector>
+# include <algorithm> 
 
 template <class T>
 class Matrix{
@@ -19,11 +19,25 @@ class Matrix{
         Matrix(const Matrix<T> & src);
         ~Matrix();
 
-        // Matrix<T> &     operator=(const Matrix & rhs);
+        Matrix<T> &     operator=(const Matrix<T> & rhs);
+        Matrix<T> &     operator+=(const Matrix<T> & rhs);
+        Matrix<T> &     operator+=(const T rhs);
+        Matrix<T> &     operator-=(const Matrix<T> & rhs);
+        Matrix<T> &     operator-=(const T rhs);
+        // Matrix<T>       operator*=(const Matrix & rhs);
+        Matrix<T> &      operator*=(const T rhs);
+        
+        template <class U> friend std::ostream &    operator<<(std::ostream & flux, const Matrix<U> & rhs);
 
-        void            display(void) const;
+        void            reshape(std::size_t m, std::size_t n);
 
+        
 };
+
+
+/****************************************************************************************************
+CONSTRUCTOR / DESTRUCTOR FUNCTIONS
+****************************************************************************************************/
 
 template <class T>
 Matrix<T>::Matrix(void) : _data(std::vector<std::vector<T>>{{0}}), _m(1), _n(1) {
@@ -51,7 +65,6 @@ Matrix<T>::Matrix(int m, int n, std::initializer_list<std::initializer_list<T>> 
     return;
 }
 
-
 template <class T>
 Matrix<T>::Matrix(const Matrix<T> & src) {
     
@@ -60,14 +73,22 @@ Matrix<T>::Matrix(const Matrix<T> & src) {
 }
 
 template <class T>
+Matrix<T>::~Matrix(void) {}
+
+/****************************************************************************************************
+PUBLIC MEMBER FUNCTIONS
+****************************************************************************************************/
+
+template <class T>
 void            Matrix<T>::reshape(std::size_t m, std::size_t n) {
     if (n * m != _n * _m) {
         throw std::invalid_argument("New shape is not compatible");
     }
+    
     std::vector<std::vector<T>> res(m, std::vector<T>(n,0));
     int                         nb_elem = m * n; 
     
-    for (int i = 0; i < nb_elem, i++) {
+    for (int i = 0; i < nb_elem; i++) {
         res[i / n][i % n] = _data[i / _n][i % _n];
     }
     _data = res;
@@ -77,21 +98,121 @@ void            Matrix<T>::reshape(std::size_t m, std::size_t n) {
     
 }
 
+/****************************************************************************************************
+OVERLOADED OPERATOR FUNCTIONS
+****************************************************************************************************/
+
 template <class T>
-void            Matrix<T>::display(void) const {
-
-    std::cout << "Matrix shape: (" << _m << ", " << _n << ")" << std::endl;
+Matrix<T> &     Matrix<T>::operator=(const Matrix<T> & src) {
     
-    // for (size_t i = 0; i < _nbElem; i++) {
-    //     if (i % _shape.second == 0)
-    //         std::cout << "[";
-        
-    //     std::cout << _data[i];
-        
-    //     if ((i+1) % _shape.second == 0)
-    //         std::cout << "]" << std::endl;
-    // }
+    _data = std::vector<std::vector<T>>(src._data);
+    _m = src._m;
+    _n = src._n;
+    return *this;
+}
 
+template <class T>
+Matrix<T> &     Matrix<T>::operator+=(const Matrix<T> & rhs) {
+
+    if (_m != rhs._m || _n != rhs._n) {
+        throw std::runtime_error("Shape doesn't match");
+    }
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        _data[i / _n][i % _n] += rhs._data[i / _n][i % _n];
+    }
+    return *this;
+}
+
+
+template <class T>
+Matrix<T> &     Matrix<T>::operator+=(const T rhs) {
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        _data[i / _n][i % _n] += rhs;
+    }
+    return *this;
+}
+
+
+template <class T>
+Matrix<T> &     Matrix<T>::operator-=(const Matrix<T> & rhs) {
+
+    if (_m != rhs._m || _n != rhs._n) {
+        throw std::runtime_error("Shape doesn't match");
+    }
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        _data[i / _n][i % _n] -= rhs._data[i / _n][i % _n];
+    }
+    return *this;
+}
+
+
+template <class T>
+Matrix<T> &     Matrix<T>::operator-=(const T rhs) {
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        _data[i / _n][i % _n] -= rhs;
+    }
+    return *this;
+}
+
+
+template <class T>
+Matrix<T> &     Matrix<T>::operator*=(const T rhs) {
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        _data[i / _n][i % _n] *= rhs;
+    }
+    return *this;
+}
+
+template <class U>
+std::ostream &  operator<<(std::ostream & flux, const Matrix<U> & rhs) {
+    
+    for (auto r_vector: rhs._data) {
+        flux << "[ ";
+        for (auto c_value : r_vector) {
+            flux << c_value << " ";
+        }
+        flux << "]" << std::endl;
+    }
+    flux << "shape: (" << rhs._m << ", " << rhs._n << ")" << std::endl;
+    return flux;
 }
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

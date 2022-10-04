@@ -1,5 +1,5 @@
 #include "Matrix.hpp"
-#include <vector>
+#include "Vector.hpp"
 
 int     main(void) {
     // int tab1[12] = {1,1,2,2,
@@ -10,18 +10,19 @@ int     main(void) {
     //                      { 7, 8, 9, 4 } };
 
 
-    Matrix<int> m2(3,2,{
-                        {1,2},
-                        {1,2},
-                        {1,2}});
-//     Matrix<int> m2(3, 4, tab1);
-    
-//     Matrix<int> m3(tab2);
+    Vector<double> e1(3,{1., 0., 0.});
+    Vector<double> e2(3,{0., 1., 0.});
+    Vector<double> e3(3,{0., 0., 1.});
+    Vector<double> v1(3,{1., 2., 3.});
+    Vector<double> v2(3,{0., 10., -100.});
+    Vector<double> v3;
 
-//     m1.display();
-    m2.display();
-//     m3.display();
+    v3 = v1 + v2;
 
-    (void)m2;
-    return 1; 
+    std::cout << v1 << v3;
+
+    std::cout << linear_combinaison<double>({e1,e2,e3}, {10.,-2.,0.5})
+                << linear_combinaison<double>({v1,v2}, {10.,-2.});
+
+   return 1;
 }
