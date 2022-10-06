@@ -77,25 +77,103 @@ int     main(void) {
     // v = Vector<float>(3 ,{4., 5., 6.});
     // std::cout << angle_cos<float>(u, v) << std::endl;
     // // 0.974631846
-    Vector<float> u(3, {0., 0., 1.});
-    Vector<float> v(3, {1., 0., 0.});
-    std::cout << cross_product(u, v);
-    // [0.]
-    // [1.]
-    // [0.]
-    u = Vector<float>(3, {1., 2., 3.});
-    v = Vector<float>(3, {4., 5., 6.});
-    std::cout << cross_product(u, v);
-    // [-3.]
-    // [6.]
-    // [-3.]
-    u = Vector<float>(3, {4., 2., -3.});
-    v = Vector<float>(3, {-2., -5., 16.});
-    std::cout << cross_product(u, v);
-    // [17.]
-    // [-58.]
-    // [-16.]
+    // Vector<float> u(3, {0., 0., 1.});
+    // Vector<float> v(3, {1., 0., 0.});
+    // std::cout << cross_product(u, v);
+    // // [0.]
+    // // [1.]
+    // // [0.]
+    // u = Vector<float>(3, {1., 2., 3.});
+    // v = Vector<float>(3, {4., 5., 6.});
+    // std::cout << cross_product(u, v);
+    // // [-3.]
+    // // [6.]
+    // // [-3.]
+    // u = Vector<float>(3, {4., 2., -3.});
+    // v = Vector<float>(3, {-2., -5., 16.});
+    // std::cout << cross_product(u, v);
+    // // [17.]
+    // // [-58.]
+    // // [-16.]
+    // Matrix<float> u(2,2,{
+    // {1., 0.},
+    // {0., 1.},
+    // });
+    // Vector<float> v(2,{4., 2.});
+    // std::cout << (u * v); 
+    // // {4.}
+    // // {2.}
+    // u = Matrix<float>(2,2,{
+    // {2., 0.},
+    // {0., 2.},
+    // });
+    // v = Vector<float>(2,{4., 2.});
+    // std::cout << (u * v); 
+    // // {8.}
+    // // {4.}
+    // u = Matrix<float>(2,2,{
+    // {2., -2.},
+    // {-2., 2.},
+    // });
+    // v = Vector<float>(2,{4., 2.});
+    // std::cout << (u * v); 
+    // // {4.}
+    // // {-4.}
+    // u = Matrix<float>(2,2,{
+    // {1., 0.},
+    // {0., 1.},
+    // });
+    // Matrix<float> t(2,2,{
+    // {1., 0.},
+    // {0., 1.},
+    // });
+    // std::cout << (u * t); 
 
+    // // {1., 0.}
+    // // {0., 1.}
+    // u = Matrix<float>(2,2,{
+    // {1., 0.},
+    // {0., 1.},
+    // });
+    // t = Matrix<float>(2,2,{
+    // {2., 1.},
+    // {4., 2.},
+    // });
+    // std::cout << (u * t);    
+    // // {2., 1.}
+    // // {4., 2.}
+    // u = Matrix<float>(2,2,{
+    // {3., -5.},
+    // {6., 8.},
+    // });
+    // t = Matrix<float>(2,2,{
+    // {2., 1.},
+    // {4., 2.},
+    // });
+    // std::cout << (u * t); 
+    // // {-14., -7.]
+    // // {44., 22.]
+    auto u = Matrix<float>(2,2,{
+    {1., 0.},
+    {0., 1.},
+    });
+    std::cout << u.trace() << std::endl;
+    // 2.0
+    u = Matrix<float>(3,3,{
+    {2., -5., 0.},
+    {4., 3., 7.},
+    {-2., 3., 4.},
+    });
+    std::cout << u.trace() << std::endl;
+    // 9.0
+    u = Matrix<float>(3,3,{
+    {-2., -8., 4.},
+    {1., -23., 4.},
+    {0., 6., 4.},
+    });
+    // std::cout << u.trace() << std::endl;
+    std::cout << u.transpose();
+    // -21.0
 
    return 1;
 }

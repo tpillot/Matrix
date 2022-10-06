@@ -5,39 +5,47 @@
 # include <vector>
 # include <algorithm>
 # include <initializer_list>
+# include "Vector.hpp"
 
 
 template <class T>
 class Matrix{
     private:
-        std::vector< std::vector<T> >     _data;
+        std::vector<std::vector<T>>     _data;
         std::size_t                     _m;
         std::size_t                     _n;
     
     
     public:
         Matrix(void);
-        Matrix(int n, int m, std::initializer_list< std::initializer_list<T> > inputs);
+        Matrix(std::size_t m, std::size_t n, T val);
+        Matrix(std::size_t m, std::size_t n, std::initializer_list< std::initializer_list<T> > inputs);
         Matrix(const Matrix<T> & src);
         ~Matrix();
 
-        Matrix<T> &     operator=(const Matrix<T> & rhs);
-        Matrix<T> &     operator+=(const Matrix<T> & rhs);
-        Matrix<T> &     operator+=(const T rhs);
-        Matrix<T> &     operator-=(const Matrix<T> & rhs);
-        Matrix<T> &     operator-=(const T rhs);
-        // Matrix<T>       operator*=(const Matrix & rhs);
-        Matrix<T> &      operator*=(const T rhs);
-        
-        Matrix<T>       operator+(const Matrix<T> & rhs);
-        Matrix<T>       operator+(const T rhs);
-        Matrix<T>       operator-(const Matrix<T> & rhs);
-        Matrix<T>       operator-(const T rhs);
-        Matrix<T>       operator*(const T rhs);
-        
+        Matrix<T> &             operator=(const Matrix<T> & rhs);
+        std::vector<T> &        operator[](std::size_t pos);
+        const std::vector<T> &  operator[](std::size_t pos) const;
+        Matrix<T> &             operator+=(const Matrix<T> & rhs);
+        Matrix<T> &             operator+=(const T rhs);
+        Matrix<T> &             operator-=(const Matrix<T> & rhs);
+        Matrix<T> &             operator-=(const T rhs);
+        Matrix<T> &             operator*=(const Matrix<T> & rhs);
+        Matrix<T> &             operator*=(const T rhs);
+
+        Matrix<T>               operator+(const Matrix<T> & rhs) const;
+        Matrix<T>               operator+(const T rhs) const;
+        Matrix<T>               operator-(const Matrix<T> & rhs) const;
+        Matrix<T>               operator-(const T rhs) const;
+        Matrix<T>               operator*(const T rhs) const;
+        Vector<T>               operator*(const Vector<T> & rhs) const;
+        Matrix<T>               operator*(const Matrix<T> & rhs) const;
+
         template <class U> friend std::ostream &    operator<<(std::ostream & flux, const Matrix<U> & rhs);
 
         void            reshape(std::size_t m, std::size_t n);
+        T               trace(void) const;
+        Matrix<T>       transpose(void) const;
 
         
 };
@@ -54,8 +62,18 @@ Matrix<T>::Matrix(void) : _data(std::vector<std::vector<T>>{{0}}), _m(1), _n(1) 
     return;
 }
 
+
 template <class T>
-Matrix<T>::Matrix(int m, int n, std::initializer_list<std::initializer_list<T>> inputs) :  _m(m), _n(n) {
+Matrix<T>::Matrix(std::size_t m, std::size_t n, T val) : _data(std::vector<std::vector<T>>(m, std::vector<T>(n, val))), _m(m), _n(n) {
+    
+    if (m == 0 || n == 0) {
+        throw std::invalid_argument("M or N can't be equal to 0");
+    }
+    return;
+}
+
+template <class T>
+Matrix<T>::Matrix(std::size_t m, std::size_t n, std::initializer_list<std::initializer_list<T>> inputs) :  _m(m), _n(n) {
 
     if(_m == 0 || _n == 0)
         throw std::invalid_argument("received zero as argument");
@@ -84,7 +102,7 @@ template <class T>
 Matrix<T>::~Matrix(void) {}
 
 /****************************************************************************************************
-PUBLIC MEMBER FUNCTIONS
+RESHAPE
 ****************************************************************************************************/
 
 template <class T>
@@ -118,6 +136,17 @@ Matrix<T> &     Matrix<T>::operator=(const Matrix<T> & src) {
     _n = src._n;
     return *this;
 }
+
+template <class T>
+std::vector<T> &             Matrix<T>::operator[](std::size_t pos) {
+    return _data[pos];
+}
+
+template <class T>
+const std::vector<T> &       Matrix<T>::operator[](std::size_t pos) const {
+    return _data[pos];
+}
+
 
 template <class T>
 Matrix<T> &     Matrix<T>::operator+=(const Matrix<T> & rhs) {
@@ -187,7 +216,30 @@ Matrix<T> &     Matrix<T>::operator*=(const T rhs) {
 }
 
 template <class T>
-Matrix<T>      Matrix<T>::operator+(const Matrix<T> & rhs) {
+Matrix<T> &     Matrix<T>::operator*=(const Matrix<T> & rhs) {
+
+    if (_n != rhs._m) {
+        throw std::runtime_error("Shape doesn't match"); 
+    }
+    
+    Matrix<T>       res(_m, rhs._n, 0);
+    T               val = 0;
+    std::size_t     nb_elem = res._m * res._n;
+    
+    for (std::size_t i = 0; i < nb_elem; i++) {
+        for (std::size_t j = 0; j < res._n; j++) {
+            val += _data[i % _n][j] * rhs[j][i / rhs._m ];
+        }
+        res[i % res._n][i / res._n] = val;
+        val = 0;
+    }
+    *this = res;
+    return *this;
+}
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator+(const Matrix<T> & rhs) const {
 
     if (_m != rhs._m) {
         throw std::runtime_error("Shape doesn't match");
@@ -201,7 +253,7 @@ Matrix<T>      Matrix<T>::operator+(const Matrix<T> & rhs) {
 
 
 template <class T>
-Matrix<T>      Matrix<T>::operator+(const T rhs) {
+Matrix<T>      Matrix<T>::operator+(const T rhs) const {
 
     Matrix<T> res(*this);
     res += rhs;
@@ -210,7 +262,7 @@ Matrix<T>      Matrix<T>::operator+(const T rhs) {
 
 
 template <class T>
-Matrix<T>      Matrix<T>::operator-(const Matrix<T> & rhs) {
+Matrix<T>      Matrix<T>::operator-(const Matrix<T> & rhs) const {
 
     if (_m != rhs._m) {
         throw std::runtime_error("Shape doesn't match");
@@ -223,7 +275,7 @@ Matrix<T>      Matrix<T>::operator-(const Matrix<T> & rhs) {
 
 
 template <class T>
-Matrix<T>      Matrix<T>::operator-(const T rhs) {
+Matrix<T>      Matrix<T>::operator-(const T rhs) const {
 
     Matrix<T> res(*this);
     res -= rhs;
@@ -232,12 +284,43 @@ Matrix<T>      Matrix<T>::operator-(const T rhs) {
 
 
 template <class T>
-Matrix<T>      Matrix<T>::operator*(const T rhs) {
+Matrix<T>      Matrix<T>::operator*(const T rhs) const {
 
     Matrix<T> res(*this);
     res *= rhs;
     return res;
 }
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator*(const Matrix<T> & rhs) const {
+
+    Matrix<T> res(*this);
+    res *= rhs;
+    return res;
+}
+
+
+template <class T>
+Vector<T>       Matrix<T>::operator*(const Vector<T> & rhs) const {
+
+    if (_n != rhs.getM()) {
+        throw std::runtime_error("Shape doesn't match"); 
+    }
+    
+    Vector<T>       res(_m, 0);
+    T               val = 0;
+    
+    for (std::size_t i = 0; i < _m; i++) {
+        for (std::size_t j = 0; j < _n; j++) {
+            val += _data[i][j] * rhs[j];
+        }
+        res[i] = val;
+        val = 0;
+    }
+    return res;
+}
+
 
 /****************************************************************************************************
 FRIEND OVERLOADED OPERATOR FUNCTIONS
@@ -258,6 +341,41 @@ std::ostream &  operator<<(std::ostream & flux, const Matrix<U> & rhs) {
 }
 
 /****************************************************************************************************
+TRACE    
+****************************************************************************************************/
+
+template <class T>
+T               Matrix<T>::trace(void) const {
+    
+    if (_m != _n) {
+        throw std::runtime_error("Matrix is not square"); 
+    }
+    
+    T   res = 0;
+    for (std::size_t i = 0; i < _m; i++) {
+        res += _data[i][i];
+    }
+    return res;
+}
+
+/****************************************************************************************************
+TRANSPOSE    
+****************************************************************************************************/
+
+template <class T>
+Matrix<T>       Matrix<T>::transpose(void) const {
+    
+    Matrix<T>       res(_n, _m, 0);
+    int             nb_elem = _m * _n; 
+    
+    for (int i = 0; i < nb_elem; i++) {
+        res[i % _n][i / _n] = _data[i / _n][i % _n];
+    }
+
+    return res;
+}
+
+/****************************************************************************************************
 LINEAR INTERPOLATION
 ****************************************************************************************************/
 
@@ -268,6 +386,40 @@ U               lerp(U u, U v, float t) {
     
     return (u*(1-t) + v*(t));
 }
+
+/****************************************************************************************************
+REDUCED ROW-ECHELON FORM
+****************************************************************************************************/
+
+template <class T>
+std::size_t     maxColElem(std::size_t col, std::size_t start_raw) const {
+    
+    T               val = _data[start_raw][col];
+    std::size_t     pos = start_raw
+    
+    for (std::size_t i = start_raw +1; i < _m; i++) {
+        if (_data[i][col] > val) {
+            val = _data[i][col];
+            pos = i;
+        }
+    }
+    return pos;
+
+}
+
+template <class T>
+Matrix<T>       fer(void) const {
+    
+    if (_n  < _m) {
+        throw std::invalid_argument("The matrix must have at least as many columns as rows.");
+    }
+    Matrix<T>       res(*this);
+    std::size_t     r = 0;
+
+}
+
+
+
 
 #endif
 
