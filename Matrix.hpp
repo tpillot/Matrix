@@ -3,19 +3,21 @@
 
 # include <iostream>
 # include <vector>
-# include <algorithm> 
+# include <algorithm>
+# include <initializer_list>
+
 
 template <class T>
 class Matrix{
     private:
-        std::vector<std::vector<T>>     _data;
+        std::vector< std::vector<T> >     _data;
         std::size_t                     _m;
         std::size_t                     _n;
     
     
     public:
         Matrix(void);
-        Matrix(int n, int m, std::initializer_list<std::initializer_list<T>> inputs);
+        Matrix(int n, int m, std::initializer_list< std::initializer_list<T> > inputs);
         Matrix(const Matrix<T> & src);
         ~Matrix();
 
@@ -26,6 +28,12 @@ class Matrix{
         Matrix<T> &     operator-=(const T rhs);
         // Matrix<T>       operator*=(const Matrix & rhs);
         Matrix<T> &      operator*=(const T rhs);
+        
+        Matrix<T>       operator+(const Matrix<T> & rhs);
+        Matrix<T>       operator+(const T rhs);
+        Matrix<T>       operator-(const Matrix<T> & rhs);
+        Matrix<T>       operator-(const T rhs);
+        Matrix<T>       operator*(const T rhs);
         
         template <class U> friend std::ostream &    operator<<(std::ostream & flux, const Matrix<U> & rhs);
 
@@ -178,18 +186,87 @@ Matrix<T> &     Matrix<T>::operator*=(const T rhs) {
     return *this;
 }
 
+template <class T>
+Matrix<T>      Matrix<T>::operator+(const Matrix<T> & rhs) {
+
+    if (_m != rhs._m) {
+        throw std::runtime_error("Shape doesn't match");
+    }
+
+    Matrix<T> res(*this);
+    res += rhs;
+    return res;
+}
+
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator+(const T rhs) {
+
+    Matrix<T> res(*this);
+    res += rhs;
+    return res;
+}
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator-(const Matrix<T> & rhs) {
+
+    if (_m != rhs._m) {
+        throw std::runtime_error("Shape doesn't match");
+    }
+
+    Matrix<T> res(*this);
+    res -= rhs;
+    return res;
+}
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator-(const T rhs) {
+
+    Matrix<T> res(*this);
+    res -= rhs;
+    return res;
+}
+
+
+template <class T>
+Matrix<T>      Matrix<T>::operator*(const T rhs) {
+
+    Matrix<T> res(*this);
+    res *= rhs;
+    return res;
+}
+
+/****************************************************************************************************
+FRIEND OVERLOADED OPERATOR FUNCTIONS
+****************************************************************************************************/
+
 template <class U>
 std::ostream &  operator<<(std::ostream & flux, const Matrix<U> & rhs) {
     
     for (auto r_vector: rhs._data) {
         flux << "[ ";
         for (auto c_value : r_vector) {
-            flux << c_value << " ";
+            flux << c_value << ", ";
         }
         flux << "]" << std::endl;
     }
     flux << "shape: (" << rhs._m << ", " << rhs._n << ")" << std::endl;
     return flux;
+}
+
+/****************************************************************************************************
+LINEAR INTERPOLATION
+****************************************************************************************************/
+
+template <class U>
+U               lerp(U u, U v, float t) {
+    if(sizeof(u) != sizeof(v))
+        throw std::runtime_error("Shape doesn't match");
+    
+    return (u*(1-t) + v*(t));
 }
 
 #endif

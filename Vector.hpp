@@ -4,6 +4,8 @@
 # include <iostream>
 # include <vector>
 # include <cmath>
+# include <initializer_list>
+
 
 template <class T>
 class Vector{
@@ -22,6 +24,8 @@ class Vector{
         const std::vector<T> &  getData(void) const;
 
 
+        T &             operator[](std::size_t pos);
+        const T &       operator[](std::size_t pos) const;
         Vector<T> &     operator=(const Vector<T> & rhs);
         Vector<T> &     operator+=(const Vector<T> & rhs);
         Vector<T> &     operator+=(const T rhs);
@@ -29,11 +33,16 @@ class Vector{
         Vector<T> &     operator-=(const T rhs);
         Vector<T> &     operator*=(const T rhs);
 
-        Vector<T>       operator+(const Vector<T> & rhs);
-        Vector<T>       operator+(const T rhs);
-        Vector<T>       operator-(const Vector<T> & rhs);
-        Vector<T>       operator-(const T rhs);
-        Vector<T>       operator*(const T rhs);
+        Vector<T>       operator+(const Vector<T> & rhs) const;
+        Vector<T>       operator+(const T rhs) const;
+        Vector<T>       operator-(const Vector<T> & rhs) const;
+        Vector<T>       operator-(const T rhs) const;
+        Vector<T>       operator*(const T rhs) const;
+        T               operator*(const Vector<T> & rhs) const;
+
+        float           norm1(void) const;
+        float           norm(void) const;
+        float           normInf(void) const;
 
 
         template <class U> friend std::ostream &    operator<<(std::ostream & flux, const Vector<U> & rhs);
@@ -107,6 +116,16 @@ Vector<T> &     Vector<T>::operator=(const Vector<T> & src) {
     return *this;
 }
 
+template <class T>
+T &             Vector<T>::operator[](std::size_t pos) {
+    return _data[pos];
+}
+
+template <class T>
+const T &       Vector<T>::operator[](std::size_t pos) const {
+    return _data[pos];
+}
+
 
 template <class T>
 Vector<T> &     Vector<T>::operator+=(const Vector<T> & rhs) {
@@ -167,55 +186,94 @@ Vector<T> &     Vector<T>::operator*=(const T rhs) {
 
 
 template <class T>
-Vector<T>      Vector<T>::operator+(const Vector<T> & rhs) {
+Vector<T>      Vector<T>::operator+(const Vector<T> & rhs) const {
 
     if (_m != rhs._m) {
         throw std::runtime_error("Shape doesn't match");
     }
 
-    Vector<T> res(*this += rhs);
+    Vector<T> res(*this);
+    res += rhs;
     return res;
 }
 
 
 template <class T>
-Vector<T>      Vector<T>::operator+(const T rhs) {
+Vector<T>      Vector<T>::operator+(const T rhs) const {
 
-    Vector<T> res(*this += rhs);
+    Vector<T> res(*this);
+    res += rhs;
     return res;
 }
 
 
 template <class T>
-Vector<T>      Vector<T>::operator-(const Vector<T> & rhs) {
+Vector<T>      Vector<T>::operator-(const Vector<T> & rhs) const {
 
     if (_m != rhs._m) {
         throw std::runtime_error("Shape doesn't match");
     }
 
-    Vector<T> res(*this -= rhs);
+    Vector<T> res(*this);
+    res -= rhs;
     return res;
 }
 
 
 template <class T>
-Vector<T>      Vector<T>::operator-(const T rhs) {
+Vector<T>      Vector<T>::operator-(const T rhs) const {
 
-    Vector<T> res(*this -= rhs);
+    Vector<T> res(*this);
+    res -= rhs;
     return res;
 }
 
 
 template <class T>
-Vector<T>      Vector<T>::operator*(const T rhs) {
+Vector<T>      Vector<T>::operator*(const T rhs) const {
 
-    Vector<T> res(*this *= rhs);
+    Vector<T> res(*this);
+    res *= rhs;
+    return res;
+}
+
+template <class T>
+T               Vector<T>::operator*(const Vector<T> & rhs) const {
+
+    if (_m != rhs._m) {
+        throw std::runtime_error("Shape doesn't match");
+    }
+
+    T   res = static_cast<T>(0);
+
+    for (std::size_t i = 0; i < _m; i++) {
+       res += (_data[i] * rhs._data[i]);
+    }
     return res;
 }
 
 
 /****************************************************************************************************
-NON MEMBER FUNCTIONS
+FRIEND OVERLOADED OPERATOR FUNCTIONS
+****************************************************************************************************/
+
+
+
+template <class U>
+std::ostream &  operator<<(std::ostream & flux, const Vector<U> & rhs) {
+    
+    for (auto r_value: rhs._data) {
+        flux << "["
+                << r_value
+                << "]" << std::endl;
+    }
+    flux << "shape: (" << rhs._m << ")" << std::endl;
+    return flux;
+}
+
+
+/****************************************************************************************************
+LINEAR COMBINAISON
 ****************************************************************************************************/
 
 template <class U>
@@ -247,22 +305,78 @@ Vector<U>       linear_combinaison(std::initializer_list<Vector<U>> vect_inputs,
 }
 
 /****************************************************************************************************
-FRIEND OVERLOADED OPERATOR FUNCTIONS
+NORM
 ****************************************************************************************************/
 
-
-
-template <class U>
-std::ostream &  operator<<(std::ostream & flux, const Vector<U> & rhs) {
+template <class T>
+float           Vector<T>::norm1(void) const {
     
-    for (auto r_value: rhs._data) {
-        flux << "["
-                << r_value
-                << "]" << std::endl;
+    float   res = 0.;
+    
+    for (std::size_t i = 0; i < _m; i++) {
+
+        res += static_cast<float>(std::abs(_data[i]));
     }
-    flux << "shape: (" << rhs._m << ")" << std::endl;
-    return flux;
+    return res;
 }
 
+template <class T>
+float           Vector<T>::norm(void) const {
+
+    T   res = 0;
+
+    for (std::size_t i = 0; i < _m; i++) {
+        res += pow(_data[i], 2);
+    }
+    
+    return (pow(res, 0.5));
+}
+
+
+template <class T>
+float           Vector<T>::normInf(void) const {
+    float      res;
+    auto       max = std::max_element(_data.begin(), _data.end());
+    auto       min = std::min_element(_data.begin(), _data.end());
+    
+    res = *max >= *min * -1 ? *max : *min * -1 ;
+    return res;
+}
+
+
+/****************************************************************************************************
+COSINE
+****************************************************************************************************/
+
+template <class U>
+float           angle_cos(const Vector<U> & u, const Vector<U> & v) {
+    
+    U   dot = u * v;
+    U   vec_magn = u.norm() * v.norm();
+
+    if (vec_magn == 0) {
+        throw std::invalid_argument("Inputs vertor are zero");
+    }
+    return (dot / vec_magn);
+}
+
+/****************************************************************************************************
+CROSS PRODUCT
+****************************************************************************************************/
+
+template <class U>
+Vector<U>       cross_product(const Vector<U> & u, const Vector<U> & v) {
+
+    if (u.getM() != 3 || v.getM() != 3) {
+        throw std::invalid_argument("Shape of vectors are not 3");
+    }
+    Vector<U>  z(3, 0);
+
+    z[0] = u[1] * v[2] - u[2] * v[1];
+    z[1] = u[2] * v[0] - u[0] * v[2];
+    z[2] = u[0] * v[1] - u[1] * v[0];
+
+    return z;
+}
 
 #endif
