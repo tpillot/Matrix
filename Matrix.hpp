@@ -41,11 +41,21 @@ class Matrix{
         Vector<T>               operator*(const Vector<T> & rhs) const;
         Matrix<T>               operator*(const Matrix<T> & rhs) const;
 
+        bool                    operator==(const Matrix<T> & rhs) const;
+
         template <class U> friend std::ostream &    operator<<(std::ostream & flux, const Matrix<U> & rhs);
 
         void            reshape(std::size_t m, std::size_t n);
         T               trace(void) const;
         Matrix<T>       transpose(void) const;
+        std::size_t     maxColElem(std::size_t col, std::size_t start_raw) const;
+        void            swapRaw(std::size_t pos1, std::size_t pos2);
+        void            multRaw(std::size_t pos, T scal);
+        void            sub2Raw(std::size_t pos1, std::size_t pos2, T scal);
+        Matrix<T>       fer(void) const;
+        T               determinant(void) const;
+        Matrix<T>       inverse(void) const;
+        Matrix<T>       identity(std::size_t n) const;
 
         
 };
@@ -321,6 +331,24 @@ Vector<T>       Matrix<T>::operator*(const Vector<T> & rhs) const {
     return res;
 }
 
+template <class T>
+bool            Matrix<T>::operator==(const Matrix<T> & rhs) const {
+    
+    if (_m != rhs._m || _n != rhs._n) {
+        return false;
+    }
+
+    int     nb_elem = _m * _n;
+    
+    for (int i = 0; i < nb_elem; i++) {
+        if (_data[i / _n][i % _n] != rhs[i / _n][i % _n]) {
+            return false;
+        }
+        
+    }
+    return true;
+}
+
 
 /****************************************************************************************************
 FRIEND OVERLOADED OPERATOR FUNCTIONS
@@ -392,13 +420,13 @@ REDUCED ROW-ECHELON FORM
 ****************************************************************************************************/
 
 template <class T>
-std::size_t     maxColElem(std::size_t col, std::size_t start_raw) const {
+std::size_t     Matrix<T>::maxColElem(std::size_t col, std::size_t start_raw) const {
     
     T               val = _data[start_raw][col];
-    std::size_t     pos = start_raw
+    std::size_t     pos = start_raw;
     
-    for (std::size_t i = start_raw +1; i < _m; i++) {
-        if (_data[i][col] > val) {
+    for (std::size_t i = (start_raw + 1); i < _m; i++) {
+        if (_data[i][col] > val || (_data[i][col] * -1) > val) {
             val = _data[i][col];
             pos = i;
         }
@@ -408,17 +436,172 @@ std::size_t     maxColElem(std::size_t col, std::size_t start_raw) const {
 }
 
 template <class T>
-Matrix<T>       fer(void) const {
+void            Matrix<T>::swapRaw(std::size_t pos1, std::size_t pos2) {
+
+    T       tmp;
+
+    for (std::size_t i = 0; i < _n; i++) {
+        
+        tmp = _data[pos1][i];
+        _data[pos1][i] = _data[pos2][i];
+        _data[pos2][i] = tmp;
+    }
+    return;
+
+}
+
+template <class T>
+void            Matrix<T>::multRaw(std::size_t pos, T scal) {
+
+    for (std::size_t i = 0; i < _n; i++) {
+        if (_data[pos][i] != 0)
+            _data[pos][i] = _data[pos][i] * scal;
+    }
+    return; 
+
+}
+
+template <class T>
+void            Matrix<T>::sub2Raw(std::size_t pos1, std::size_t pos2, T scal) {
+    
+    for (std::size_t i = 0; i < _n; i++) {
+        _data[pos1][i] -= _data[pos2][i] * scal;    
+    }
+    return;
+}
+
+
+template <class T>
+Matrix<T>       Matrix<T>::fer(void) const {
     
     if (_n  < _m) {
         throw std::invalid_argument("The matrix must have at least as many columns as rows.");
     }
     Matrix<T>       res(*this);
-    std::size_t     r = 0;
+    std::size_t     r = -1;
+    std::size_t     k = 0;
+
+    std::cout << "nb_col: " << _n << std::endl;
+    for (std::size_t i = 0; i < _n && r+1 < _m ; i++) {
+        
+        k = res.maxColElem(i, r+1);
+        if (res[k][i] != 0) {
+            std::cout << res; 
+            r++;
+            if (k != r) {
+                res.swapRaw(r, k);
+            }
+            
+            res.multRaw(r, (1 /res[r][i]));
+            
+            for (std::size_t j = 0; j < _m; j++) {
+                if (j != r || res[j][i] == 0) {
+                    std::cout << res; 
+                    res.sub2Raw(j, r, res[j][i]);
+                }
+            }
+            
+        }
+    }
+    return res;
 
 }
 
+/****************************************************************************************************
+DETERMINANT
+****************************************************************************************************/
 
+template <class T>
+T               Matrix<T>::determinant(void) const {
+    if (_m != _n)
+        throw std::runtime_error("Matrix is not square");
+    
+    T               d = 1;
+    int             swap_count = 0;
+    Matrix<T>       res(*this);
+    std::size_t     k;
+
+
+    for (std::size_t i = 0; i < _n ; i++) {
+
+        if (res[i][i] == 0) {
+            k = res.maxColElem(i,i);
+            if (k != i) {
+                res.swapRaw(i,k);
+                swap_count++;
+            }
+        }
+
+        for (std::size_t j = i+1; j < _m ; j++) {
+            if (res[j][i] != 0) {
+                res.sub2Raw(j, i, res[j][i] / res[i][i]);
+            }
+        }
+
+        d *= res[i][i];
+    }
+    d = (swap_count % 2 == 0) ? d : d * -1;
+    return d;
+}
+
+/****************************************************************************************************
+INVERSE
+****************************************************************************************************/
+
+template <class T>
+Matrix<T>       Matrix<T>::identity(std::size_t n) const {
+    if (n < 2) {
+        throw std::invalid_argument("Identity matrix must have at least 2 raw and 2 columns");
+    }
+    Matrix<T>   id(n, n, 0);
+
+    for (std::size_t i = 0 ; i < n; i++) {
+        id[i][i] = 1;
+    }
+    return id;
+
+}
+
+template <class T>
+Matrix<T>       Matrix<T>::inverse(void) const {
+    
+    if (_n  != _m) {
+        throw std::invalid_argument("Matrix is not square");
+    }
+    Matrix<T>       res(*this);
+    Matrix<T>       id = id.identity(_n);
+    std::size_t     r = -1;
+    std::size_t     k = 0;
+
+    for (std::size_t i = 0; i < _n && r+1 < _m ; i++) {
+        
+        k = res.maxColElem(i, r+1);
+        if (res[k][i] != 0) { 
+            r++;
+            if (k != r) {
+                res.swapRaw(r, k);
+                id.swapRaw(r, k);
+            }
+            
+            res.multRaw(r, (1 /res[r][i]));
+            id.multRaw(r, (1 /id[r][i]));
+            
+            for (std::size_t j = 0; j < _m; j++) {
+                if (j != r || res[j][i] == 0) {
+    
+
+                    res.sub2Raw(j, r, res[j][i]);
+                    id.sub2Raw(j, r, id[j][i]);
+                }
+            }
+            
+        }
+    }
+    if (!(res == res.identity(_n)))
+        throw std::runtime_error("Matrix is not inversible");
+    return id;
+
+}
 
 
 #endif
