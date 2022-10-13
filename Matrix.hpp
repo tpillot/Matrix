@@ -4,6 +4,7 @@
 # include <iostream>
 # include <vector>
 # include <algorithm>
+# include <cmath>
 # include <initializer_list>
 # include "Vector.hpp"
 
@@ -56,6 +57,8 @@ class Matrix{
         T               determinant(void) const;
         Matrix<T>       inverse(void) const;
         Matrix<T>       identity(std::size_t n) const;
+        bool            rawIsNull(std::size_t pos) const;
+        std::size_t     rank(void) const;
 
         
 };
@@ -465,7 +468,12 @@ template <class T>
 void            Matrix<T>::sub2Raw(std::size_t pos1, std::size_t pos2, T scal) {
     
     for (std::size_t i = 0; i < _n; i++) {
-        _data[pos1][i] -= _data[pos2][i] * scal;    
+        if (_data[pos2][i] - 1 < std::numeric_limits<T>::epsilon() && _data[pos2][i] - 1 > -std::numeric_limits<T>::epsilon()) {
+            _data[pos2][i] = 1;
+        }
+
+        _data[pos1][i] -= _data[pos2][i] * scal;
+        
     }
     return;
 }
@@ -474,19 +482,17 @@ void            Matrix<T>::sub2Raw(std::size_t pos1, std::size_t pos2, T scal) {
 template <class T>
 Matrix<T>       Matrix<T>::fer(void) const {
     
-    if (_n  < _m) {
-        throw std::invalid_argument("The matrix must have at least as many columns as rows.");
-    }
+    // if (_n  < _m) {
+    //     throw std::invalid_argument("The matrix must have at least as many columns as rows.");
+    // }
     Matrix<T>       res(*this);
     std::size_t     r = -1;
     std::size_t     k = 0;
 
-    std::cout << "nb_col: " << _n << std::endl;
     for (std::size_t i = 0; i < _n && r+1 < _m ; i++) {
         
         k = res.maxColElem(i, r+1);
         if (res[k][i] != 0) {
-            std::cout << res; 
             r++;
             if (k != r) {
                 res.swapRaw(r, k);
@@ -496,7 +502,6 @@ Matrix<T>       Matrix<T>::fer(void) const {
             
             for (std::size_t j = 0; j < _m; j++) {
                 if (j != r || res[j][i] == 0) {
-                    std::cout << res; 
                     res.sub2Raw(j, r, res[j][i]);
                 }
             }
@@ -569,10 +574,13 @@ Matrix<T>       Matrix<T>::inverse(void) const {
         throw std::invalid_argument("Matrix is not square");
     }
     Matrix<T>       res(*this);
-    Matrix<T>       id = id.identity(_n);
+    Matrix<T>       id;
     std::size_t     r = -1;
     std::size_t     k = 0;
 
+    id = id.identity(_n);
+    // std::cout << id;
+    std::cout << res;
     for (std::size_t i = 0; i < _n && r+1 < _m ; i++) {
         
         k = res.maxColElem(i, r+1);
@@ -581,28 +589,71 @@ Matrix<T>       Matrix<T>::inverse(void) const {
             if (k != r) {
                 res.swapRaw(r, k);
                 id.swapRaw(r, k);
+
             }
-            
+            id.multRaw(r, (1 /res[r][i]));
             res.multRaw(r, (1 /res[r][i]));
-            id.multRaw(r, (1 /id[r][i]));
+            
+            // std::cout << id;
+            std::cout << res;
             
             for (std::size_t j = 0; j < _m; j++) {
                 if (j != r || res[j][i] == 0) {
-    
-
+                    
+                    // std::cout << res[j][i] << std::endl;
+                    // std::cout << r << std::endl;
+                    // std::cout << id;
+                    // std::cout << "id : " << std::endl;
+                    id.sub2Raw(j, r, res[j][i]);
+                    
+                    // std::cout << "res : " << std::endl;
+                    // std::cout << res;
                     res.sub2Raw(j, r, res[j][i]);
-                    id.sub2Raw(j, r, id[j][i]);
+                    // std::cout << res[j][i] << std::endl;
+                    std::cout << res;
                 }
             }
             
         }
     }
+    std::cout << id ;
     if (!(res == res.identity(_n)))
         throw std::runtime_error("Matrix is not inversible");
     return id;
 
 }
 
+/****************************************************************************************************
+RANK
+****************************************************************************************************/
+
+template <class T>
+bool            Matrix<T>::rawIsNull(std::size_t pos) const {
+
+    for (std::size_t i = 0; i < _n; i++) {
+        if (_data[pos][i] != 0)
+            return false;
+    }
+    return true;
+}
+
+template <class T>
+std::size_t     Matrix<T>::rank(void) const {
+    
+    std::size_t     rank = 0;
+    auto mf =       *this;
+    
+    // if (_m > _n)
+    //     mf = mf.transpose();
+    
+    mf = mf.fer();
+    for (std::size_t i = 0; i < mf._m; i++) {
+        if (!mf.rawIsNull(i))
+            rank++;
+    }
+    std::cout << mf;
+    return rank;
+}
 
 #endif
 
